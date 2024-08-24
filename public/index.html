@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Item Cart</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="styles.css" />
+    </head>
+    <body>
+        <div class="cart-counter" id="cartCounter">
+            Items in Cart: <span id="itemCount">0</span> | Total: $<span
+                id="totalAmount"
+                >0.00</span
+            >
+        </div>
+        <h1>Item Cart</h1>
+        <div class="container">
+            <div class="item-card">
+                <div class="product black-cube"></div>
+                <p>Black Cube - $1.00</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="input-group quantity-control">
+                        <button
+                            class="btn btn-outline-dark btn-sm"
+                            onclick="changeQuantity('black', -1)"
+                        >
+                            -
+                        </button>
+                        <input
+                            type="text"
+                            id="black-quantity"
+                            value="0"
+                            readonly
+                            class="form-control text-center"
+                        />
+                        <button
+                            class="btn btn-outline-dark btn-sm"
+                            onclick="changeQuantity('black', 1)"
+                        >
+                            +
+                        </button>
+                    </div>
+                    <button
+                        class="btn btn-dark ms-2"
+                        onclick="addToCart('black')"
+                    >
+                        Add to Cart
+                    </button>
+                </div>
+            </div>
+            <div class="item-card">
+                <div class="product red-cube"></div>
+                <p>Red Cube - $1.00</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="input-group quantity-control">
+                        <button
+                            class="btn btn-outline-dark btn-sm"
+                            onclick="changeQuantity('red', -1)"
+                        >
+                            -
+                        </button>
+                        <input
+                            type="text"
+                            id="red-quantity"
+                            value="0"
+                            readonly
+                            class="form-control text-center"
+                        />
+                        <button
+                            class="btn btn-outline-dark btn-sm"
+                            onclick="changeQuantity('red', 1)"
+                        >
+                            +
+                        </button>
+                    </div>
+                    <button
+                        class="btn btn-dark ms-2"
+                        onclick="addToCart('red')"
+                    >
+                        Add to Cart
+                    </button>
+                </div>
+            </div>
+            <div class="item-card">
+                <div class="product silver-cube"></div>
+                <p>Silver Cube - $1.00</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="input-group quantity-control">
+                        <button
+                            class="btn btn-outline-dark btn-sm"
+                            onclick="changeQuantity('silver', -1)"
+                        >
+                            -
+                        </button>
+                        <input
+                            type="text"
+                            id="silver-quantity"
+                            value="0"
+                            readonly
+                            class="form-control text-center"
+                        />
+                        <button
+                            class="btn btn-outline-dark btn-sm"
+                            onclick="changeQuantity('silver', 1)"
+                        >
+                            +
+                        </button>
+                    </div>
+                    <button
+                        class="btn btn-dark ms-2"
+                        onclick="addToCart('silver')"
+                    >
+                        Add to Cart
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="checkout-button d-flex justify-content-between">
+            <button class="btn btn-dark" type="button" onclick="submitCart()">
+                Checkout
+            </button>
+            <button class="btn btn-outline-dark" onclick="clearCart()">
+                Clear Cart
+            </button>
+        </div>
+
+        <script src="https://unpkg.com/htmx.org@1.8.0"></script>
+        <script>
+            let cart = {
+                black: 0,
+                red: 0,
+                silver: 0,
+            };
+
+            const prices = {
+                black: 1.0,
+                red: 1.0,
+                silver: 1.0,
+            };
+
+            function changeQuantity(item, change) {
+                const input = document.getElementById(`${item}-quantity`);
+                let quantity = parseInt(input.value);
+                quantity = Math.max(0, quantity + change);
+                input.value = quantity;
+            }
+
+            function addToCart(item) {
+                const quantity = parseInt(
+                    document.getElementById(`${item}-quantity`).value,
+                );
+                cart[item] += quantity;
+                updateCartDisplay();
+            }
+
+            function updateCartDisplay() {
+                const itemCount = Object.values(cart).reduce(
+                    (a, b) => a + b,
+                    0,
+                );
+                const totalAmount = Object.entries(cart)
+                    .reduce((sum, [item, qty]) => sum + qty * prices[item], 0)
+                    .toFixed(2);
+                document.getElementById("itemCount").textContent = itemCount;
+                document.getElementById("totalAmount").textContent =
+                    totalAmount;
+            }
+
+            function clearCart() {
+                cart = { black: 0, red: 0, silver: 0 };
+                updateCartDisplay();
+                document.getElementById("black-quantity").value = 0;
+                document.getElementById("red-quantity").value = 0;
+                document.getElementById("silver-quantity").value = 0;
+            }
+
+            async function submitCart() {
+                try {
+                    const response = await fetch("/checkout", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ cart }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error("Failed to create checkout session");
+                    }
+
+                    const sessionUrl = await response.text(); // Get the session URL from the server
+                    window.location.href = sessionUrl; // Redirect to the Stripe Checkout page
+                } catch (error) {
+                    console.error("Error:", error);
+                }
+            }
+        </script>
+    </body>
+</html>
